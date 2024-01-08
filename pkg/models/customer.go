@@ -1,48 +1,45 @@
 package models
 
-// import (
-// 	"time"
+import (
+	"github.com/google/uuid"
 
-// 	"github.com/google/uuid"
-// )
+	"github.com/pliavi/go-for-tickets/pkg/utils/database"
+)
 
-// type Customer struct {
-// 	Id                   uuid.UUID  `json:"id"`
-// 	SessionEnd           *time.Time `json:"session_end"`
-// 	EstimatedTimeInQueue *int       `json:"estimated_time_in_queue"`
-// }
+type Customer struct {
+	ID uuid.UUID
+}
 
-// func NewCustomer(
-// 	id *uuid.UUID,
-// 	sessionEnd time.Time,
-// 	estimatedTimeInQueue int,
-// ) *Customer {
-// 	if id == nil {
-// 		newId := uuid.New()
-// 		id = &newId
-// 	}
+func NewCustomer() *Customer {
+	return &Customer{
+		ID: uuid.New(),
+	}
+}
 
-// 	return &Customer{
-// 		Id:                   *id,
-// 		SessionEnd:           &sessionEnd,
-// 		EstimatedTimeInQueue: &estimatedTimeInQueue,
-// 	}
-// }
+func (c *Customer) Save() error {
+	db := database.GetInstance()
 
-// func (c *Customer) SetSessionEnd(t time.Time) *Customer {
-// 	c.SessionEnd = &t
-// 	return c
-// }
+	var lid uuid.UUID
+	err := db.
+		// TODO: create using default
+		QueryRow("INSERT INTO customers (id) VALUES ($1) RETURNING id", c.ID).
+		Scan(&lid)
 
-// func (c *Customer) SetEstimatedTimeInQueue(t int) *Customer {
-// 	if c.SessionEnd != nil {
-// 		c.EstimatedTimeInQueue = &t
-// 		return c
-// 	}
+	if err != nil {
+		return err
+	}
 
-// 	panic("Cannot set estimated time after customer session started, are you trying to return the customer to the queue?")
-// }
+	return nil
+}
 
-// func (c *Customer) IsSessionFinished() bool {
-// 	return time.Now().Compare(*c.SessionEnd) >= 0
-// }
+func GetCustomer(id string) (*Customer, error) {
+	db := database.GetInstance()
+
+	var customer Customer
+	err := db.QueryRow("SELECT id FROM customers WHERE id::text = $1", id).Scan(&customer.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &customer, nil
+}

@@ -1,20 +1,15 @@
 package handlers
 
-import "net/http"
+import (
+	"net/http"
+)
 
 func FinishedBuyingHandler(w http.ResponseWriter, r *http.Request) {
-	// queueMutex.Lock()
-	// defer queueMutex.Unlock()
+	// TODO:  - get the queue, from taking the concert id from the url
+	//        - check if the cookie customer id is the same as the one in the queue
+	//        - check if the purchase deadline is set
+	// 			  - delete the queue
+	//				- check if the customer is in another queue
+	//				- if not, delete the customer
 
-	// customerId := r.URL.Query().Get("id")
-
-	// for i, customer := range buying {
-	// 	if customer.Id.String() == customerId {
-	// 		buying = append(buying[:i], buying[i+1:]...)
-	// 		break
-	// 	}
-	// }
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
 }

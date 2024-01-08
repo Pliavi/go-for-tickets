@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 
+	_ "github.com/lib/pq"
 	"github.com/pliavi/go-for-tickets/pkg/config"
 )
 

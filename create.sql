@@ -1,29 +1,24 @@
-drop table if exists concert;
-drop table if exists concert_queue;
-drop table if exists customer;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-create table concert (
-  id integer primary key auto_increment,
-  name text,
-  booking_size integer,
-)
+DROP TABLE IF EXISTS concerts;
+DROP TABLE IF EXISTS concert_queues;
+DROP TABLE IF EXISTS customers;
 
-create table customer (
-  id text primary key, -- UUID
-)
+CREATE TABLE concerts (
+  id SERIAL PRIMARY KEY,
+  name TEXT,
+  booking_size INTEGER
+);
 
-create table concert_queue (
-  id integer primary key auto_increment,
-  -- if null, means customer is in queue
-  -- if deadline, means customer is booking
-  purchase_deadline datetime, 
+CREATE TABLE customers (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4()
+);
 
-  concert_id integer not null,
-  customer_id text not null,
-
-  foreign key(concert_id) references concert(id)
-  foreign key(customer_id) references customer(id)
-)
-
-
-
+CREATE TABLE concert_queues (
+  id SERIAL PRIMARY KEY,
+  purchase_deadline TIMESTAMP, -- NULL means in queue, non-NULL means booking deadline
+  concert_id INTEGER NOT NULL,
+  customer_id UUID NOT NULL,
+  FOREIGN KEY (concert_id) REFERENCES concerts(id) ON DELETE CASCADE,
+  FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+);
