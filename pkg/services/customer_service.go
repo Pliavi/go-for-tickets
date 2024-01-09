@@ -1,6 +1,8 @@
 package services
 
 import (
+	"log"
+
 	"github.com/pliavi/go-for-tickets/pkg/entities"
 	"github.com/pliavi/go-for-tickets/pkg/repositories"
 )
@@ -24,10 +26,13 @@ func (cs *customerService) GetOrCreateCustomer(email string) (*entities.Customer
 
 	if err == nil {
 		return customer, nil
+	} else {
+		log.Print(err)
 	}
 
 	customer, err = cs.customerRepository.Create(email)
 	if err != nil {
+		log.Fatal(err)
 		return nil, err
 	}
 

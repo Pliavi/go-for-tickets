@@ -6,7 +6,7 @@ import (
 )
 
 type CustomerRepository interface {
-	Create(name string) (*entities.Customer, error)
+	Create(email string) (*entities.Customer, error)
 	GetCustomerByEmail(email string) (*entities.Customer, error)
 }
 
@@ -23,7 +23,7 @@ func NewCustomerRepository(db *sqlx.DB) CustomerRepository {
 func (cr *customerRepository) Create(email string) (*entities.Customer, error) {
 	customer := &entities.Customer{}
 
-	query := `INSERT INTO customers (name) VALUES ($1) RETURNING id`
+	query := `INSERT INTO customers (email) VALUES ($1) RETURNING id`
 	err := cr.db.QueryRowx(query, email).StructScan(customer)
 	if err != nil {
 		return nil, err
@@ -35,7 +35,7 @@ func (cr *customerRepository) Create(email string) (*entities.Customer, error) {
 func (cr *customerRepository) GetCustomerByEmail(email string) (*entities.Customer, error) {
 	customer := &entities.Customer{}
 
-	query := `SELECT id, name FROM customers WHERE email = $1`
+	query := `SELECT id, email FROM customers WHERE email = $1`
 	err := cr.db.QueryRowx(query, email).StructScan(customer)
 	if err != nil {
 		return nil, err

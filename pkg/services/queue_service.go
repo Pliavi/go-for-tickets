@@ -14,8 +14,8 @@ type QueueService struct {
 	customerRepo  repositories.CustomerRepository
 	queue         []entities.Customer
 	queueLock     sync.Mutex
-	startPurchase chan entities.Customer
-	endPurchase   chan entities.Customer
+	StartPurchase chan *entities.Customer
+	PurchaseDone  chan *entities.Customer
 }
 
 func NewQueueService(concertRepo repositories.ConcertRepository, customerRepo repositories.CustomerRepository) *QueueService {
@@ -23,10 +23,11 @@ func NewQueueService(concertRepo repositories.ConcertRepository, customerRepo re
 		concertRepo:   concertRepo,
 		customerRepo:  customerRepo,
 		queue:         []entities.Customer{},
-		startPurchase: make(chan entities.Customer),
-		endPurchase:   make(chan entities.Customer),
+		StartPurchase: make(chan *entities.Customer),
+		PurchaseDone:  make(chan *entities.Customer),
 	}
 }
+
 func (qs *QueueService) AddCustomerToQueue(customer *entities.Customer) (time.Duration, error) {
 	qs.queueLock.Lock()
 	defer qs.queueLock.Unlock()
@@ -35,7 +36,7 @@ func (qs *QueueService) AddCustomerToQueue(customer *entities.Customer) (time.Du
 
 	if qs.canMoveToBuyingPhase() {
 		// If a spot is available, send the customer to the startPurchase channel
-		qs.startPurchase <- *customer
+		qs.StartPurchase <- customer
 	} else {
 		// If no spot is available, add the customer to the queue
 		qs.queue = append(qs.queue, *customer)
@@ -44,6 +45,51 @@ func (qs *QueueService) AddCustomerToQueue(customer *entities.Customer) (time.Du
 	}
 
 	return estimatedWaitTime, nil
+}
+
+func (qs *QueueService) ProcessQueue() {
+	for {
+		select {
+		case customer := <-qs.StartPurchase:
+			// Customer is ready to start purchasing
+			// Handle logic to initiate purchase
+			go qs.initiatePurchase(customer)
+
+		case customer := <-qs.PurchaseDone:
+			// Customer has completed or failed the purchase
+			// Handle post-purchase logic
+			qs.handlePostPurchase(customer)
+		}
+
+		// Add logic to manage adding/removing from the queue
+	}
+}
+
+func (qs *QueueService) initiatePurchase(customer *entities.Customer) {
+	// Set a timer for the purchase duration
+	purchaseTimeLimit := time.Duration(qs.concertRepo.GetConcurrentCustomerLimit())
+	timer := time.NewTimer(purchaseTimeLimit)
+
+	<-timer.C // is this necessary?
+
+	// Time expired, send customer to purchaseDone channel
+	qs.PurchaseDone <- customer
+	// Add logic to handle customer completing the purchase before the timeout
+}
+
+func (qs *QueueService) handlePostPurchase(customer *entities.Customer) {
+	// Remove the customer from the queue and/or active buyers
+	// Update the customer's status or perform other cleanup actions
+	qs.queueLock.Lock()
+	defer qs.queueLock.Unlock()
+
+	// Remove the customer from the queue
+	for i, c := range qs.queue {
+		if c.ID == customer.ID {
+			qs.queue = append(qs.queue[:i], qs.queue[i+1:]...)
+			break
+		}
+	}
 }
 
 func (qs *QueueService) canMoveToBuyingPhase() bool {
