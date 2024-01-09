@@ -1,117 +1,43 @@
 package handlers
 
 import (
-	"fmt"
+	"encoding/json"
 	"net/http"
-	"strconv"
+	"time"
 
-	"github.com/pliavi/go-for-tickets/pkg/models"
-	"github.com/pliavi/go-for-tickets/pkg/utils"
-	"github.com/pliavi/go-for-tickets/pkg/utils/database"
+	"github.com/pliavi/go-for-tickets/pkg/services"
 )
 
-func AddToQueueHandler(w http.ResponseWriter, r *http.Request) {
-	db := database.GetInstance()
-	tx, err := db.Begin()
-
-	if err != nil {
-		utils.SendDefaultErrorResponse(w, err)
-		return
-	}
-
-	concert_id := r.URL.Query().Get("id")
-	if concert_id == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("concert id is required"))
-		return
-	}
-
-	var customer_id string
-	if len(r.Cookies()) > 0 {
-		customer_id = r.Cookies()[0].Value
-	}
-
-	var customer *models.Customer
-	var concert_queue *models.ConcertQueue
-
-	if customer_id == "" {
-		customer, concert_queue, err = createCustomerAndQueue(concert_id)
-	} else {
-		customer, concert_queue, err = getCustomerAndQueue(concert_id, customer_id)
-	}
-	if err != nil {
-		utils.SendDefaultErrorResponse(w, err)
-		return
-	}
-
-	estimated_queue_duration, err := concert_queue.EstimatedTimeInQueue()
-	if err != nil {
-		utils.SendDefaultErrorResponse(w, err)
-		return
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		utils.SendDefaultErrorResponse(w, err)
-		return
-	}
-
-	http.SetCookie(w, &http.Cookie{
-		Name:  "customer_id",
-		Value: customer.ID.String(),
-	})
-
-	utils.SendJsonResponse(
-		w,
-		http.StatusCreated,
-		map[string]string{ // Why did copilot suggest map[string]interface?
-			"queue_id":                 strconv.Itoa(*concert_queue.ID),
-			"estimated_queue_duration": fmt.Sprintf("%d seconds", *estimated_queue_duration),
-		},
-	)
+type QueueHandler struct {
+	queueService    services.QueueService
+	customerService services.CustomerService
 }
 
-func createCustomerAndQueue(concert_id string) (*models.Customer, *models.ConcertQueue, error) {
-	customer := models.NewCustomer()
-
-	err := customer.Save()
-	if err != nil {
-		return nil, nil, err
+func NewQueueHandler(queueService services.QueueService, customerService services.CustomerService) *QueueHandler {
+	return &QueueHandler{
+		queueService:    queueService,
+		customerService: customerService,
 	}
-
-	concert, err := models.GetConcert(concert_id)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	concert_queue := models.NewConcertQueue(concert, customer)
-	err = concert_queue.Save()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return customer, concert_queue, nil
 }
 
-func getCustomerAndQueue(concert_id string, customer_id string) (*models.Customer, *models.ConcertQueue, error) {
-	customer, err := models.GetCustomer(customer_id)
+func (qh *QueueHandler) AddCustomerToQueueHandler(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("customer_email")
 	if err != nil {
-		return nil, nil, err
+		http.Error(w, "Cookie not found", http.StatusUnauthorized)
+		return
 	}
 
-	concert_queue, err := models.GetConcertQueue(concert_id, customer_id)
-	if err != nil && err.Error() == "sql: no rows in result set" {
-		concert, err := models.GetConcert(concert_id)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		concert_queue = models.NewConcertQueue(concert, customer)
-		err = concert_queue.Save()
-		if err != nil {
-			return nil, nil, err
-		}
+	customer, err := qh.customerService.GetOrCreateCustomer(cookie.Value)
+	if err != nil {
+		http.Error(w, "Failed to retrieve or create customer", http.StatusInternalServerError)
+		return
 	}
 
-	return customer, concert_queue, nil
+	waitTime, err := qh.queueService.AddCustomerToQueue(customer)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]time.Duration{"waitTime": waitTime})
 }
