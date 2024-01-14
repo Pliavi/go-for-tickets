@@ -7,7 +7,6 @@ import (
 
 type ConcertRepository interface {
 	Create(name string, totalTickets, concurrentCustomerLimit int) (*entities.Concert, error)
-	GetConcurrentCustomerLimit() int
 }
 
 type concertRepository struct {
@@ -34,9 +33,4 @@ func (cr *concertRepository) Create(name string, totalTickets, concurrentCustome
 	}
 
 	return concert, nil
-}
-
-func (cr *concertRepository) GetConcurrentCustomerLimit() int {
-	// TODO: Implement this
-	return 5
 }

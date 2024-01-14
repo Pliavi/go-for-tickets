@@ -7,7 +7,6 @@ import (
 
 type CustomerRepository interface {
 	Create(email string) (*entities.Customer, error)
-	GetCustomerByEmail(email string) (*entities.Customer, error)
 }
 
 type customerRepository struct {
@@ -24,18 +23,6 @@ func (cr *customerRepository) Create(email string) (*entities.Customer, error) {
 	customer := &entities.Customer{}
 
 	query := `INSERT INTO customers (email) VALUES ($1) RETURNING id`
-	err := cr.db.QueryRowx(query, email).StructScan(customer)
-	if err != nil {
-		return nil, err
-	}
-
-	return customer, nil
-}
-
-func (cr *customerRepository) GetCustomerByEmail(email string) (*entities.Customer, error) {
-	customer := &entities.Customer{}
-
-	query := `SELECT id, email FROM customers WHERE email = $1`
 	err := cr.db.QueryRowx(query, email).StructScan(customer)
 	if err != nil {
 		return nil, err
