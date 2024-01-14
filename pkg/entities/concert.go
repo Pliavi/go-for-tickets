@@ -1,10 +1,10 @@
 package entities
 
 type Concert struct {
-	ID                      *uint
-	Name                    string
-	TotalTickets            int
-	ConcurrentCustomerLimit int
+	ID                      *uint  `json:"id"`
+	Name                    string `json:"name"`
+	TotalTickets            int    `json:"total_tickets"`
+	ConcurrentCustomerLimit int    `json:"concurrent_customer_limit"`
 }
 
 func NewConcert(name string, totalTickets, concurrentCustomerLimit int) *Concert {

@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/pliavi/go-for-tickets/pkg/database"
-	"github.com/pliavi/go-for-tickets/pkg/handlers"
 	"github.com/pliavi/go-for-tickets/pkg/repositories"
 	"github.com/pliavi/go-for-tickets/pkg/services"
 )
@@ -17,14 +16,7 @@ func NewRouter() http.Handler {
 	concertRepo := repositories.NewConcertRepository(db)
 	customerRepo := repositories.NewCustomerRepository(db)
 
-	queueService := services.NewQueueService(concertRepo, customerRepo)
 	customerService := services.NewCustomerService(customerRepo)
-
-	queueHandler := handlers.NewQueueHandler(*queueService, customerService)
-
-	go queueService.ProcessQueue()
-
-	mux.HandleFunc("/enqueue", queueHandler.AddCustomerToQueueHandler)
 
 	return mux
 }
