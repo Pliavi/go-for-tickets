@@ -6,17 +6,12 @@ import (
 	"net/http"
 )
 
-// TODO: DO NOT USE THIS!!!
-func TryPanic(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
+// TODO: Simplify this
 func SendJsonResponse(w http.ResponseWriter, statusCode int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 
+	// TODO: Maybe marshal is not necessary here
 	json_str, err := json.Marshal(data)
 
 	if err != nil {
@@ -28,6 +23,8 @@ func SendJsonResponse(w http.ResponseWriter, statusCode int, data any) {
 	w.Write([]byte(json_str))
 }
 
+// TODO: Use a custom APIError struct instead of error
+// SendErrorResponse logs the actual error and sends the error message to the client
 func SendErrorResponse(w http.ResponseWriter, statusCode int, message string, err error) {
 	log.Fatal(err)
 	SendJsonResponse(w, statusCode, map[string]string{"error": message})

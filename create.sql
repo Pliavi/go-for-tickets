@@ -27,6 +27,16 @@ CREATE TABLE concert_queues (
   FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
 );
 
-INSERT 
-  INTO concerts (name, total_tickets, concurrent_customer_limit) 
-  VALUES ('The Grand Ole Opry', 100, 10);
+INSERT INTO concerts (name, total_tickets, concurrent_customer_limit) VALUES 
+  ('Restart', 300, 22), 
+  ('Green Day', 250, 12),
+  ('Paramore', 420, 15),
+  ('Glória', 250, 12),
+  ('Jinjer', 300, 22),
+  ('Jake Bugg', 120, 11),
+  ('Seu Pereira e Coletivo 401', 440, 16),
+  ('5 Seconds of Summer', 332, 20),
+  ('Billie Eilish', 123, 32);
+
+
+  

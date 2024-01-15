@@ -3,9 +3,9 @@ package routes
 import (
 	"net/http"
 
+	"github.com/pliavi/go-for-tickets/pkg/controllers"
 	"github.com/pliavi/go-for-tickets/pkg/database"
 	"github.com/pliavi/go-for-tickets/pkg/repositories"
-	"github.com/pliavi/go-for-tickets/pkg/services"
 )
 
 func NewRouter() http.Handler {
@@ -14,9 +14,14 @@ func NewRouter() http.Handler {
 	db := database.MustGetConnection()
 
 	concertRepo := repositories.NewConcertRepository(db)
-	customerRepo := repositories.NewCustomerRepository(db)
+	// customerRepo := repositories.NewCustomerRepository(db)
 
-	customerService := services.NewCustomerService(customerRepo)
+	// customerService := services.NewCustomerService(customerRepo)
+
+	concertController := controllers.NewConcertController(concertRepo)
+
+	mux.HandleFunc("/concerts", concertController.Index)
+	mux.HandleFunc("/concerts/show", concertController.Show)
 
 	return mux
 }
